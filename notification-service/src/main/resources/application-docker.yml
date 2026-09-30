@@ -1,0 +1,9 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://postgres-db:5432/notificationdb
+  rabbitmq:
+    host: rabbitmq
+eureka:
+  client:
+    service-url:
+      defaultZone: http://service-discovery:8761/eureka/

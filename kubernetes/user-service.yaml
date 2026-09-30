@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-service
+  namespace: social-media-platform
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: user-service }
+  template:
+    metadata:
+      labels: { app: user-service }
+    spec:
+      containers:
+        - name: user-service
+          image: social-media-platform/user-service:latest
+          ports: [{ containerPort: 8081 }]
+          envFrom:
+            - configMapRef: { name: platform-config }
+          env:
+            - name: DB_NAME
+              value: "userdb"
+            - name: DB_USER
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: DB_USER } }
+            - name: DB_PASSWORD
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: DB_PASSWORD } }
+            - name: RABBITMQ_USER
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: RABBITMQ_USER } }
+            - name: RABBITMQ_PASSWORD
+              valueFrom: { secretKeyRef: { name: platform-secrets, key: RABBITMQ_PASSWORD } }
+          readinessProbe:
+            httpGet: { path: /actuator/health, port: 8081 }
+            initialDelaySeconds: 30
+          resources:
+            requests: { cpu: "250m", memory: "384Mi" }
+            limits: { cpu: "500m", memory: "768Mi" }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-service
+  namespace: social-media-platform
+spec:
+  selector: { app: user-service }
+  ports: [{ port: 8081, targetPort: 8081 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: user-service-hpa
+  namespace: social-media-platform
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: user-service
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target: { type: Utilization, averageUtilization: 70 }

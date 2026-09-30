@@ -1,0 +1,83 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins: "http://localhost:3000"
+            allowedMethods: [GET, POST, PUT, DELETE, PATCH, OPTIONS]
+            allowedHeaders: "*"
+            allowCredentials: true
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/users/**
+          filters:
+            - name: JwtAuthenticationFilter
+            - StripPrefix=2
+        - id: post-service
+          uri: lb://post-service
+          predicates:
+            - Path=/api/posts/**
+          filters:
+            - name: JwtAuthenticationFilter
+            - StripPrefix=2
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**
+          filters:
+            - name: JwtAuthenticationFilter
+            - StripPrefix=2
+        - id: notification-ws
+          uri: lb:ws://notification-service
+          predicates:
+            - Path=/ws/notifications/**
+        - id: chat-service
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/chat/**
+          filters:
+            - name: JwtAuthenticationFilter
+            - StripPrefix=2
+        - id: chat-ws
+          uri: lb:ws://chat-service
+          predicates:
+            - Path=/ws/chat/**
+        - id: media-service
+          uri: lb://media-service
+          predicates:
+            - Path=/api/media/**
+          filters:
+            - name: JwtAuthenticationFilter
+            - StripPrefix=2
+        - id: analytics-service
+          uri: lb://analytics-service
+          predicates:
+            - Path=/api/analytics/**
+          filters:
+            - name: JwtAuthenticationFilter
+            - StripPrefix=2
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://service-discovery:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway
